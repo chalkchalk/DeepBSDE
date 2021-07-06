@@ -6,8 +6,10 @@ import logging
 import torch.optim as optim
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+from collections import deque
 import torch
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
 # torch.backends.cudnn.benchmark=True
 
 def train(config,bsde):
@@ -20,13 +22,14 @@ def train(config,bsde):
     net = FeedForwardModel(config, bsde)
     # net.cuda()
 
-    optimizer = optim.SGD(net.parameters(), 5e-4)
+    optimizer = optim.SGD(net.parameters(), config.lr_values)
     start_time = time.time()
     # to save iteration results
     training_history = []
     # for validation
     dw_valid, x_valid = bsde.sample(config.valid_size)
-
+    loss_train_log = deque(maxlen=10000)
+    y0log = deque(maxlen=10000)
     # begin sgd iteration
     for step in range(config.num_iterations + 1):
         if step % config.logging_frequency == 0:
@@ -35,6 +38,23 @@ def train(config,bsde):
             loss, init = net(x_valid, dw_valid)
             elapsed_time = time.time() - start_time
             training_history.append([step, loss, init.item(), elapsed_time])
+            loss_train_log.append(loss)
+            y0log.append(init.item())
+            plt.ion()  # 打开交互模式
+            plt.clf()
+            plt.subplot(121)
+            plt.plot(loss_train_log, label='loss')
+            plt.ylabel('loss')
+            plt.ylim((0, 5))
+            plt.xlabel('t')
+            plt.legend()
+            plt.subplot(122)
+            plt.plot(y0log, label='y0')
+            plt.ylabel('y0')
+            plt.xlabel('t')
+            plt.legend()
+            plt.show()
+            plt.pause(0.001)
             if config.verbose:
                 logging.info("step: %5u,    loss: %.4e,   Y0: %.4e,  elapsed time %3u" % (
                     step, loss, init.item(), elapsed_time))
@@ -66,6 +86,9 @@ def train(config,bsde):
 
 
 if __name__ == '__main__':
-    cfg = get_config('AllenCahn')
-    bsde = get_equation('AllenCahn', cfg.dim, cfg.total_time, cfg.num_time_interval)
-    train(cfg,bsde)
+    model = "LiMan2"
+    # model = "AllenCahn"
+    #cfg = get_config('AllenCahn')
+    cfg = get_config(model)
+    bsde = get_equation(model, cfg.dim, cfg.total_time, cfg.num_time_interval)
+    train(cfg, bsde)

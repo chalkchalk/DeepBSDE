@@ -65,37 +65,27 @@ class FeedForwardModel(nn.Module):
         self._y_init.data.uniform_(self._config.y_init_range[0], self._config.y_init_range[1])
         self._subnetworkList = nn.ModuleList([Subnetwork(config) for _ in range(self._num_time_interval-1)])
 
-    def forward(self, x, dw):
+    def forward(self, xs, dw):
 
         time_stamp = np.arange(0, self._bsde.num_time_interval) * self._bsde.delta_t
 
         z_init = torch.zeros([1, self._dim]).uniform_(-.1, .1).to(TH_DTYPE)
-        # z_init = torch.zeros([1, self._dim]).uniform_(-.1, .1).to(TH_DTYPE).cuda()
         all_one_vec = torch.ones((dw.shape[0], 1), dtype=TH_DTYPE)
-        # all_one_vec = torch.ones((dw.shape[0], 1), dtype=TH_DTYPE).cuda()
         y = all_one_vec * self._y_init
-
+        x = torch.ones([xs.shape[0], self._dim]) * self._bsde.x_init
         z = torch.matmul(all_one_vec, z_init)
-
         for t in range(0, self._num_time_interval-1):
-            #print('y qian', y.max())
             y = y - self._bsde.delta_t * (
-                self._bsde.f_th(time_stamp[t], x[:, :, t], y, z)
+                self._bsde.f_th(time_stamp[t], x, y, z)
                 )
-            #print('y hou', y.max())
-            add = torch.sum(z * dw[:, :, t], dim=1, keepdim=True) #torch.Size([64, 1])
-            #print('add', add.max())
-            # print(z.shape, dw[:, :, t].shape, (z * dw[:, :, t]).shape)
-            #print(add.shape)
-            y = y + add
-            z = self._subnetworkList[t](x[:, :, t + 1]) / self._dim
-            #print('z value', z.max())
-        # terminal time
+            y = y + torch.sum(z * dw[:, :, t], dim=1, keepdim=True) #torch.Size([64, 1])
+            x = x + self._bsde.delta_t * self._bsde.h_th(y) + self._bsde.sigma * dw[:, :, t]
+            z = self._subnetworkList[t](x) / self._dim
         y = y - self._bsde.delta_t * self._bsde.f_th(
-                    time_stamp[-1], x[:, :, -2], y, z
+                    time_stamp[-1], x, y, z
                     ) + torch.sum(z * dw[:, :, -1], dim=1, keepdim=True)
-
-        delta = y - self._bsde.g_th(self._total_time, x[:, :, -1])
+        x = x + self._bsde.delta_t * self._bsde.h_th(y) + self._bsde.sigma * dw[:, :, -1]
+        delta = y - self._bsde.g_th(self._total_time, x)
         # use linear approximation outside the clipped range
         loss = torch.mean(torch.where(torch.abs(delta) < DELTA_CLIP, delta**2,
                                                     2 * DELTA_CLIP * torch.abs(delta) - DELTA_CLIP ** 2))

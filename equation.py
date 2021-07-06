@@ -58,16 +58,17 @@ class AllenCahn(Equation):
     def __init__(self, dim, total_time, num_time_interval):
         super(AllenCahn, self).__init__(dim, total_time, num_time_interval)
         self._x_init = np.zeros(self._dim)
-        self._sigma = np.sqrt(2.0)
+        self.sigma = np.sqrt(2.0)
 
     def sample(self, num_sample):
         dw_sample = normal.rvs(size=[num_sample,
                                      self._dim,
                                      self._num_time_interval]) * self._sqrt_delta_t
+
         x_sample = np.zeros([num_sample, self._dim, self._num_time_interval + 1])
         x_sample[:, :, 0] = np.ones([num_sample, self._dim]) * self._x_init
         for i in range(self._num_time_interval):
-            x_sample[:, :, i + 1] = x_sample[:, :, i] + self._sigma * dw_sample[:, :, i]
+            x_sample[:, :, i + 1] = x_sample[:, :, i] + self.sigma * dw_sample[:, :, i]
         return torch.FloatTensor(dw_sample), torch.FloatTensor(x_sample)
 
     def f_th(self, t, x, y, z):
@@ -76,4 +77,57 @@ class AllenCahn(Equation):
     def g_th(self, t, x):
         return 0.5 / (1 + 0.2 * torch.sum(x**2, dim=1, keepdim=True))
 
+    def h_th(self, y):
+        return 0
 
+
+class LiMan(Equation):
+    def __init__(self, dim, total_time, num_time_interval):
+        super(LiMan, self).__init__(dim, total_time, num_time_interval)
+        self._x_init = np.zeros(self._dim)
+        self.sigma = 1
+        self._rho = 3
+
+    def sample(self, num_sample):
+        dw_sample = normal.rvs(size=[num_sample,
+                                     self._dim,
+                                     self._num_time_interval]) * self._sqrt_delta_t
+        dw_sample = dw_sample.reshape((num_sample, self._dim, self._num_time_interval))
+        x_sample = np.zeros([num_sample, self._dim, self._num_time_interval + 1])
+        x_sample[:, :, 0] = np.ones([num_sample, self._dim]) * self._x_init
+        return torch.FloatTensor(dw_sample), torch.FloatTensor(x_sample)
+
+    def f_th(self, t, x, y, z):
+        return - torch.arctan(torch.mean(x) * torch.ones(x.shape))
+
+    def g_th(self, t, x):
+        return torch.arctan(x)
+
+    def h_th(self, y):
+        return - self._rho * y
+
+
+class LiMan2(Equation):
+    def __init__(self, dim, total_time, num_time_interval):
+        super(LiMan2, self).__init__(dim, total_time, num_time_interval)
+        self.x_init = 2
+        self.sigma = 1
+        self._rho = 0.1
+        self.a = 0.25
+
+    def sample(self, num_sample):
+        dw_sample = normal.rvs(size=[num_sample,
+                                     self._dim,
+                                     self._num_time_interval]) * self._sqrt_delta_t
+        dw_sample = dw_sample.reshape((num_sample, self._dim, self._num_time_interval))
+        x_sample = np.zeros([num_sample, self._dim, self._num_time_interval + 1])
+        return torch.FloatTensor(dw_sample), torch.FloatTensor(x_sample)
+
+    def f_th(self, t, x, y, z):
+        return self.a * y
+
+    def g_th(self, t, x):
+        return x
+
+    def h_th(self, y):
+        return - self._rho * torch.mean(y) * torch.ones(y.shape)

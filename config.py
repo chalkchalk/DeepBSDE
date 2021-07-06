@@ -7,7 +7,7 @@ class Config(object):
     valid_size = 256
     step_boundaries = [2000, 4000]
     num_iterations = 6000
-    logging_frequency = 100
+    logging_frequency = 20
     verbose = True
     y_init_range = [0, 1]
 
@@ -18,22 +18,33 @@ class AllenCahnConfig(Config):
     dim = 100
     lr_values = list(np.array([5e-4, 5e-4]))
     lr_boundaries = [2000]
-    num_iterations = 4000
+    num_iterations = 8000
     num_hiddens = [dim, dim + 10, dim + 10, dim]
-    y_init_range = [0.3, 0.6]
+    y_init_range = [0.2, 0.4]
 
 
 class LiManConfig(Config):
-    total_time = 0.3
+    total_time = 1.0
     num_time_interval = 20
-    dim = 100
-    lr_values = list(np.array([5e-4, 5e-4]))
+    dim = 1
+    lr_values = 1e-3
     lr_boundaries = [2000]
-    num_iterations = 4000
-    num_hiddens = [dim, dim + 10, dim + 10, dim]
-    y_init_range = [0.3, 0.6]
-    sigma = 1
-    rho = 2
+    num_iterations = 8000
+    num_hiddens = [dim, 100, 100, dim]
+    y_init_range = [-0.8, 0.6]
+    x_sample_num = 64
+
+
+class LiMan2Config(Config):
+    total_time = 1.0
+    num_time_interval = 20
+    dim = 1
+    lr_values = 1e-3
+    lr_boundaries = [2000]
+    num_iterations = 8000
+    num_hiddens = [dim, 100, 100, dim]
+    y_init_range = [1, 2]
+    x_sample_num = 64
 
 
 class HJBConfig(Config):
@@ -54,7 +65,7 @@ class PricingOptionConfig(Config):
     num_time_interval = 20
     lr_values = list(np.array([5e-3, 5e-3]))
     lr_boundaries = [2000]
-    num_iterations = 4000
+    num_iterations = 10000
     num_hiddens = [dim, dim+10, dim+10, dim]
     y_init_range = [15, 18]
 
