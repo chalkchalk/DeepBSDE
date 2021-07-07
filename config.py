@@ -16,11 +16,12 @@ class AllenCahnConfig(Config):
     total_time = 0.3
     num_time_interval = 20
     dim = 100
-    lr_values = list(np.array([5e-4, 5e-4]))
+    lr_values = 1e-3
     lr_boundaries = [2000]
     num_iterations = 8000
     num_hiddens = [dim, dim + 10, dim + 10, dim]
-    y_init_range = [0.2, 0.4]
+    y_init_range = [0.0, 0.1]
+    x_sample_num = 64
 
 
 class LiManConfig(Config):
@@ -37,14 +38,26 @@ class LiManConfig(Config):
 
 class LiMan2Config(Config):
     total_time = 1.0
-    num_time_interval = 20
+    num_time_interval = 50
     dim = 1
     lr_values = 1e-3
     lr_boundaries = [2000]
-    num_iterations = 8000
+    num_iterations = 15000
     num_hiddens = [dim, 100, 100, dim]
     y_init_range = [1, 2]
     x_sample_num = 64
+
+
+class LiMan3Config(Config):
+    total_time = 2.0
+    num_time_interval = 40
+    dim = 1
+    lr_values = 1e-3
+    lr_boundaries = [2000]
+    num_iterations = 15000
+    num_hiddens = [dim, 100, 100, dim]
+    y_init_range = [-1000, -900]
+    x_sample_num = 200
 
 
 class HJBConfig(Config):

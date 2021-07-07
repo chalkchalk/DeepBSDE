@@ -8,7 +8,7 @@ TH_DTYPE = torch.float32
 
 MOMENTUM = 0.99
 EPSILON = 1e-6
-DELTA_CLIP = 50.0
+DELTA_CLIP = 50
 
 
 class Dense(nn.Module):
@@ -72,20 +72,25 @@ class FeedForwardModel(nn.Module):
         z_init = torch.zeros([1, self._dim]).uniform_(-.1, .1).to(TH_DTYPE)
         all_one_vec = torch.ones((dw.shape[0], 1), dtype=TH_DTYPE)
         y = all_one_vec * self._y_init
-        x = torch.ones([xs.shape[0], self._dim]) * self._bsde.x_init
+        x = self._bsde.get_x_init(xs.shape[0])
+        # x = torch.ones([xs.shape[0], self._dim]) * self._bsde.x_init
         z = torch.matmul(all_one_vec, z_init)
         for t in range(0, self._num_time_interval-1):
             y = y - self._bsde.delta_t * (
                 self._bsde.f_th(time_stamp[t], x, y, z)
                 )
             y = y + torch.sum(z * dw[:, :, t], dim=1, keepdim=True) #torch.Size([64, 1])
-            x = x + self._bsde.delta_t * self._bsde.h_th(y) + self._bsde.sigma * dw[:, :, t]
+            x = x + self._bsde.delta_t * self._bsde.h_th(x, y) + self._bsde.sigma * dw[:, :, t]
             z = self._subnetworkList[t](x) / self._dim
         y = y - self._bsde.delta_t * self._bsde.f_th(
                     time_stamp[-1], x, y, z
                     ) + torch.sum(z * dw[:, :, -1], dim=1, keepdim=True)
-        x = x + self._bsde.delta_t * self._bsde.h_th(y) + self._bsde.sigma * dw[:, :, -1]
-        delta = y - self._bsde.g_th(self._total_time, x)
+        x = x + self._bsde.delta_t * self._bsde.h_th(x, y) + self._bsde.sigma * dw[:, :, -1]
+        X_N = self._bsde.g_th(self._total_time, x)
+        # print("===")
+        # print(torch.mean(x))
+        #print(torch.mean(X_N))
+        delta = y - X_N
         # use linear approximation outside the clipped range
         loss = torch.mean(torch.where(torch.abs(delta) < DELTA_CLIP, delta**2,
                                                     2 * DELTA_CLIP * torch.abs(delta) - DELTA_CLIP ** 2))

@@ -27,7 +27,7 @@ def train(config,bsde):
     # to save iteration results
     training_history = []
     # for validation
-    dw_valid, x_valid = bsde.sample(config.valid_size)
+    dw_valid, x_valid = bsde.sample(config.x_sample_num)
     loss_train_log = deque(maxlen=10000)
     y0log = deque(maxlen=10000)
     # begin sgd iteration
@@ -45,7 +45,7 @@ def train(config,bsde):
             plt.subplot(121)
             plt.plot(loss_train_log, label='loss')
             plt.ylabel('loss')
-            plt.ylim((0, 5))
+            # plt.ylim((0, 5))
             plt.xlabel('t')
             plt.legend()
             plt.subplot(122)
@@ -59,7 +59,7 @@ def train(config,bsde):
                 logging.info("step: %5u,    loss: %.4e,   Y0: %.4e,  elapsed time %3u" % (
                     step, loss, init.item(), elapsed_time))
 
-        dw_train, x_train = bsde.sample(config.batch_size)
+        dw_train, x_train = bsde.sample(config.x_sample_num)
         # print(dw_train.shape, x_train.shape) # torch.Size([64, 100, 20]) torch.Size([64, 100, 21])
         optimizer.zero_grad()
         net.train()
@@ -86,7 +86,7 @@ def train(config,bsde):
 
 
 if __name__ == '__main__':
-    model = "LiMan2"
+    model = "LiMan3"
     # model = "AllenCahn"
     #cfg = get_config('AllenCahn')
     cfg = get_config(model)
